@@ -1,0 +1,14 @@
+http:
+  routers:
+    kafka:
+      entryPoints: 
+      - http
+      service: kafka-service
+      rule: Host(`kafka.otter.lt`) || Host(`kafka.internal`)
+
+  services:
+    kafka-service:
+      loadBalancer:
+        servers:
+        - url: http://172.16.238.39:8080/
+        passHostHeader: false

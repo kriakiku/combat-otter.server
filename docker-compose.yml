@@ -7,28 +7,60 @@ services:
   ###
   traefik:
     image: traefik:v3.0
-    restart: always
-    container_name: unless-stopped
+    restart: unless-stopped
+    container_name: traefik
     security_opt:
       - no-new-privileges:true
     ports:
       - 80:80
       - 443:443 
     networks:
+      public:
       private:
         ipv4_address: 172.16.238.10
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/traefik.yml:/traefik.yml:ro
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.traefik.entrypoints=http"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.otter.lt`) || Host(`traefik.internal`)"
-      - "traefik.http.routers.traefik.service=api@internal"
-      - "traefik.http.services.traefik-traefik.loadbalancer.server.port=888"
-      - "traefik.http.middlewares.traefik-auth.basicauth.users=wh7WqsCjxFzWbHyxyphX:$$apr1$$n9w9BhYU$$ptsEwLgqcQemS4G4WYGNx/"
-      - "traefik.http.routers.traefik.middlewares=traefik-auth"
+      - ./traefik/services/:/services/:ro
+
+  ###
+  # Frontend
+  ###
+  # frontend-node1:
+  #   build: ./frontend/Dockerfile.prod
+  #   restart: always
+  #   container_name: frontend
+  #   networks:
+  #     private:
+  #       ipv4_address: 172.16.238.11
+
+  # frontend-node2:
+  #   build: ./frontend/Dockerfile.prod
+  #   restart: always
+  #   container_name: frontend
+  #   networks:
+  #     private:
+  #       ipv4_address: 172.16.238.12
+
+  frontend-dev:
+    image: node:20.4.0-alpine
+    container_name: frontend-dev
+    restart: always
+    working_dir: /nuxt
+    volumes:
+      - ./frontend:/nuxt
+      # - frontend-dev-deps:/nuxt/node_modules
+    command: >-
+        /bin/sh -c "
+          yarn install && 
+          yarn dev
+        "
+    networks:
+      public:
+    ports:
+      - 3000:3000
+      - 24678:24678
 
 
   ###
@@ -42,7 +74,7 @@ services:
       COUCHDB_USER: ${COUCHDB_USER}
       COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
       COUCHDB_SECRET: ${COUCHDB_SECRET}
-      NODENAME: couchdb-main
+      NODENAME: 172.16.238.20
       ERL_FLAGS: "-setcookie ${COUCHDB_COOKIE}"
     networks:
       private:
@@ -50,11 +82,6 @@ services:
     volumes:
       - "couchdb-main-data:/opt/couchdb/data"
       - "couchdb-main-cfg:/opt/couchdb/etc/local.d"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.couchdb-main.entrypoints=http"
-      - "traefik.http.routers.couchdb-main.rule=Host(`couchdb.otter.lt`) || Host(`couchdb.internal`)"
-      - "traefik.http.services.couchdb-main-service.loadbalancer.server.port=5984"
 
   couchdb-node1:
     image: couchdb:3.3.1
@@ -64,7 +91,7 @@ services:
       COUCHDB_USER: ${COUCHDB_USER}
       COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
       COUCHDB_SECRET: ${COUCHDB_SECRET}
-      NODENAME: couchdb-node1
+      NODENAME: 172.16.238.21
       ERL_FLAGS: "-setcookie ${COUCHDB_COOKIE}"
     networks:
       private:
@@ -81,7 +108,7 @@ services:
       COUCHDB_USER: ${COUCHDB_USER}
       COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
       COUCHDB_SECRET: ${COUCHDB_SECRET}
-      NODENAME: couchdb-node2
+      NODENAME: 172.16.238.22
       ERL_FLAGS: "-setcookie ${COUCHDB_COOKIE}"
     networks:
       private:
@@ -106,71 +133,93 @@ services:
       private:
         ipv4_address: 172.16.238.29
 
-  # ###
-  # # Kafka QUEUE
-  # # @see https://habr.com/ru/articles/738874/
-  # # @see https://www.baeldung.com/ops/kafka-docker-setup
-  # ###
-  # queue-zookeeper: 
-  #   image: confluentinc/cp-zookeeper:7.4.1
-  #   restart: always
-  #   container_name: queue-zookeeper
-  #   environment:
-  #     ZOOKEEPER_CLIENT_PORT: 2181
-  #     ZOOKEEPER_TICK_TIME: 2000
-  #   ports:
-  #     - 32181:2181
+  couchdb-migrations:
+    image: node:20.4.0-alpine
+    container_name: couchdb-migrations
+    working_dir: /app
+    environment:
+      COUCHDB_USER: ${COUCHDB_USER}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
+      COUCHDB_SERVER: http://172.16.238.20:5984
+    depends_on:
+      - couchdb-main
+    volumes:
+      - ./migrations:/app
+    command: >-
+        /bin/sh -c "
+          sleep 10 && 
+          yarn install && 
+          yarn nano:migrate
+        "
+    networks:
+      private:
+        ipv4_address: 172.16.238.28
 
-  # queue-kafka-node1:
-  #   image: confluentinc/cp-kafka:7.4.1
-  #   restart: always
-  #   container_name: queue-kafka-node1
-  #   depends_on:
-  #     - queue-zookeeper
-  #   ports:
-  #     - 29092:29092
-  #   hostname: queue-kafka-node1
-  #   environment:
-  #     KAFKA_BROKER_ID: 1
-  #     KAFKA_ZOOKEEPER_CONNECT: queue-zookeeper:2181
-  #     KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://queue-kafka-node1:29092
-  #     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-  #     KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-  #     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+  ###
+  # Kafka QUEUE
+  # @see https://habr.com/ru/articles/738874/
+  # @see https://www.baeldung.com/ops/kafka-docker-setup
+  ###
+  queue-zookeeper: 
+    image: confluentinc/cp-zookeeper:7.4.1
+    restart: always
+    container_name: queue-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      private:
+        ipv4_address: 172.16.238.30
 
-  # queue-kafka-node2:
-  #   image: confluentinc/cp-kafka:7.4.1
-  #   restart: always
-  #   container_name: queue-kafka-node2
-  #   depends_on:
-  #     - queue-zookeeper
-  #   ports:
-  #     - 29093:29092
-  #   hostname: queue-kafka-node2
-  #   environment:
-  #     KAFKA_BROKER_ID: 2
-  #     KAFKA_ZOOKEEPER_CONNECT: queue-zookeeper:2181
-  #     KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://queue-kafka-node2:29093
-  #     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-  #     KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-  #     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+  queue-ui:
+    image: provectuslabs/kafka-ui
+    restart: always
+    container_name: queue-ui
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=queue-cluster
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=172.16.238.31:29092,172.16.238.32:29092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=172.16.238.30:2181
+    networks:
+      private:
+        ipv4_address: 172.16.238.39
+
+  queue-kafka-node1:
+    image: confluentinc/cp-kafka:7.4.1
+    restart: always
+    container_name: queue-kafka-node1
+    depends_on:
+      - queue-zookeeper
+    networks:
+      private:
+        ipv4_address: 172.16.238.31
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 172.16.238.30:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://172.16.238.31:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+
+  queue-kafka-node2:
+    image: confluentinc/cp-kafka:7.4.1
+    restart: always
+    container_name: queue-kafka-node2
+    depends_on:
+      - queue-zookeeper
+    networks:
+      private:
+        ipv4_address: 172.16.238.32
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: 172.16.238.30:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://172.16.238.32:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
   
-  # queue-ui:
-  #   image: provectuslabs/kafka-ui
-  #   restart: always
-  #   container_name: queue-ui
-  #   ports:
-  #     - 8090:8080
-  #   environment:
-  #     - KAFKA_CLUSTERS_0_NAME=local
-  #     - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=queue-kafka-node1:29092,queue-kafka-node2:29093
-  #     - KAFKA_CLUSTERS_0_ZOOKEEPER=queue-zookeeper:2181
-  #   links:
-  #     - queue-zookeeper
-  #     - queue-kafka-node1
-  #     - queue-kafka-node2
-
 networks:
+  public:
+    name: public-combat-otter
   private:
     name: private-combat-otter
     internal: true
@@ -179,7 +228,6 @@ networks:
       config:
         - subnet: 172.16.238.0/24
 
-
 volumes:
   couchdb-main-data:
   couchdb-main-cfg:
@@ -187,3 +235,4 @@ volumes:
   couchdb-node1-cfg:
   couchdb-node2-data:
   couchdb-node2-cfg:
+  frontend-dev-deps:

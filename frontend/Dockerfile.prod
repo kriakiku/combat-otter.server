@@ -1,0 +1,12 @@
+FROM node:20.4.0-alpine
+
+RUN npm install -g bun
+
+WORKDIR /frontend
+COPY . /frontend
+
+RUN bun install --frozen-lockfile
+RUN nuxt build
+
+EXPOSE 3000
+CMD ["node", ".output/server/index.mjs"]

@@ -1,0 +1,16 @@
+http:
+  routers:
+    frontend:
+      entryPoints: 
+      - http
+      service: frontend-service
+      rule: Host(`frontend.otter.lt`) || Host(`frontend.internal`)
+
+  services:
+    frontend-service:
+      loadBalancer:
+        servers:
+        # - url: http://172.16.238.11:3000/ # PROD
+        # - url: http://172.16.238.12:3000/ # PROD
+        - url: http://172.16.238.13:3000/ # DEV
+        passHostHeader: false

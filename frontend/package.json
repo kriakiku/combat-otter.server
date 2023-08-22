@@ -1,6 +1,7 @@
 {
   "name": "nuxt-app",
   "private": true,
+  "packageManager": "yarn@1.22.19",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -14,7 +15,11 @@
     "nuxt": "^3.6.5",
     "sass": "1.66.1"
   },
+  "resolutions": {
+    "**/vite-node": "vite-node@0.34.2"
+  },
   "dependencies": {
+    "h3-typebox": "^0.6.0",
     "normalize.css": "^8.0.1"
   }
 }

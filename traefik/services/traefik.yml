@@ -1,0 +1,21 @@
+http:
+  routers:
+    traefik:
+      entryPoints: 
+      - http
+      service: api@internal
+      middlewares: traefik-auth
+      rule: Host(`traefik.otter.lt`) || Host(`traefik.internal`)
+
+  middlewares:
+    traefik-auth:
+      basicAuth:
+        users:
+        - "wh7WqsCjxFzWbHyxyphX:$apr1$n9w9BhYU$ptsEwLgqcQemS4G4WYGNx/"
+
+  services:
+    traefik-service:
+      loadBalancer:
+        servers:
+        - url: http://172.16.238.39:8080/
+        passHostHeader: false
