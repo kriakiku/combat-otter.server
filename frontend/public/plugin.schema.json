@@ -1,0 +1,121 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://udra.io/plguin.schema.json",
+    "title": "Plugin declaration for the \"Combat Otter\" application",
+    "description": "Configuration of the plugin for different versions of the scheme.",
+    "type": "object",
+    "required": ["version", "baseUri", "title", "settings"],
+    "properties": {
+        "version": {
+            "description": "The first and so far the only version of the scheme.",
+            "type": "string",
+            "enum": ["1.0"]
+        },
+        "baseUri": {
+            "title": "The basic uri to the website of plugin",
+            "description": "All paths will be indicated relative to it. The uri must not contain get parameters or anchors. Only https scheme is allowed.",
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https:\\/\\/((?!#|\\?).)*$"
+        },
+        "icon": {
+            "title": "Relative path to plugin icon",
+            "description": "The image can be in almost any format supported by Google Chrome (svg, png, jpeg, webp, ...).",
+            "type": "string"
+        },
+        "title": {
+            "title": "The name of your plugin",
+            "$ref": "#/$defs/translatable"
+        },
+        "description": {
+            "title": "The description of your plugin",
+            "$ref": "#/$defs/translatable"
+        },
+        "settings": {
+            "title": "Settings management page",
+            "type": "object",
+            "required": ["path"],
+            "properties": {
+                "path": {
+                    "description": "Relative path to the plugin settings management page",
+                    "type": "string"
+                }
+            }
+        },
+        "notify": {
+            "title": "Statistics changes callback settings.",
+            "type": "object",
+            "required": ["path"],
+            "properties": {
+                "path": {
+                    "description": "Relative path to the callback.",
+                    "type": "string"
+                },
+                "interval": {
+                    "description": "The minimum interval (in seconds) that must pass from the previous request to send a new one. By default, ~30 seconds",
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 3600,
+                    "multipleOf": 0.1
+                },
+                "filter": {
+                    "title": "Filter of rows that can be sent to the server",
+                    "type": "object",
+                    "properties": {
+                        "length": {
+                            "description": "Limit in the number of rows (applies to each type of statistics). By default ~30.",
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        },
+                        "period": {
+                            "description": "The time period for which statistics will be taken. The period must be specified in seconds. E.g.: 3600 (1hrs), 86400 (1day), 604800 (weak), 2628000 (month).",
+                            "type": "integer",
+                            "minimum": 900
+                        },
+                        "type": {
+                            "description": "Type of statistics to be sent. By default, everything is sent",
+                            "type": "array",
+                            "uniqueItems": true,
+                            "items": {
+                                "type": "string",
+                                "enum": ["wz:rank", "wz:sr", "mw:rank", "wz:sr", "level"]
+                            }
+                        }
+                    }
+                },
+                "flags": {
+                    "description": "Additional flags (The \"send-on-startup\" flag is enabled by default)",
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": {
+                        "type": "string",
+                        "enum": ["send-on-startup"]
+                    }
+                }
+            }
+        }
+    },
+    "$defs": {
+        "translatable": {
+            "type": "array",
+            "minContains": 1,
+            "uniqueItems": true,
+            "items": {
+                "type": "object",
+                "required": ["language", "value"],
+                "properties": {
+                    "language": {
+                        "type": "string",
+                        "enum": ["en", "lt", "ua", "ru"]
+                    },
+                    "value": {
+                        "type": "string",
+                        "minLength": 6,
+                        "maxLength": 128
+                    }
+                }
+            }
+        }
+    }
+}

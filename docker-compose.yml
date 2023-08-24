@@ -9,6 +9,8 @@ services:
     image: traefik:v3.0
     restart: unless-stopped
     container_name: traefik
+    environment:
+      - BASE_DOMAIN=${BASE_DOMAIN}
     security_opt:
       - no-new-privileges:true
     ports:
@@ -17,7 +19,7 @@ services:
     networks:
       public:
       private:
-        ipv4_address: 172.16.238.10
+        ipv6_address: 2001:3200:3200::1001
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -33,7 +35,7 @@ services:
   #   container_name: frontend
   #   networks:
   #     private:
-  #       ipv4_address: 172.16.238.11
+  #       ipv6_address: 172.16.238.11
 
   # frontend-node2:
   #   build: ./frontend/Dockerfile.prod
@@ -41,84 +43,91 @@ services:
   #   container_name: frontend
   #   networks:
   #     private:
-  #       ipv4_address: 172.16.238.12
+  #       ipv6_address: 172.16.238.12
 
-  frontend-dev:
-    image: node:20.4.0-alpine
-    container_name: frontend-dev
-    restart: always
-    working_dir: /nuxt
-    volumes:
-      - ./frontend:/nuxt
-      # - frontend-dev-deps:/nuxt/node_modules
-    command: >-
-        /bin/sh -c "
-          yarn install && 
-          yarn dev
-        "
-    networks:
-      public:
-    ports:
-      - 3000:3000
-      - 24678:24678
+  # frontend-dev:
+  #   image: node:20.4.0-alpine
+  #   container_name: frontend-dev
+  #   restart: always
+  #   working_dir: /nuxt
+  #   volumes:
+  #     - ./frontend:/nuxt
+  #     # - frontend-dev-deps:/nuxt/node_modules
+  #   command: >-
+  #       /bin/sh -c "
+  #         yarn install && 
+  #         yarn dev
+  #       "
+  #   networks:
+  #     public:
+  #   ports:
+  #     - 3000:3000
+  #     - 24678:24678
 
 
   ###
   # CouchDB
   ###
-  couchdb-main:
-    image: couchdb:3.3.1
-    restart: always
-    container_name: couchdb-main
-    environment:
-      COUCHDB_USER: ${COUCHDB_USER}
-      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
-      COUCHDB_SECRET: ${COUCHDB_SECRET}
-      NODENAME: 172.16.238.20
-      ERL_FLAGS: "-setcookie ${COUCHDB_COOKIE}"
-    networks:
-      private:
-        ipv4_address: 172.16.238.20
-    volumes:
-      - "couchdb-main-data:/opt/couchdb/data"
-      - "couchdb-main-cfg:/opt/couchdb/etc/local.d"
-
   couchdb-node1:
     image: couchdb:3.3.1
     restart: always
     container_name: couchdb-node1
+    hostname: couchdb-node1
     environment:
       COUCHDB_USER: ${COUCHDB_USER}
       COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
       COUCHDB_SECRET: ${COUCHDB_SECRET}
-      NODENAME: 172.16.238.21
+      NODENAME: "172.16.0.200"
       ERL_FLAGS: "-setcookie ${COUCHDB_COOKIE}"
     networks:
       private:
-        ipv4_address: 172.16.238.21
+        ipv6_address: 2001:3200:3200::2000
+        ipv4_address: 172.16.0.200
     volumes:
-      - "couchdb-node1-data:/opt/couchdb/data"
-      - "couchdb-node1-cfg:/opt/couchdb/etc/local.d"
+      - couchdb-node1-data:/opt/couchdb/data
+      - couchdb-node1-cfg:/opt/couchdb/etc/local.d
 
   couchdb-node2:
     image: couchdb:3.3.1
     restart: always
     container_name: couchdb-node2
+    hostname: couchdb-node2
     environment:
       COUCHDB_USER: ${COUCHDB_USER}
       COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
       COUCHDB_SECRET: ${COUCHDB_SECRET}
-      NODENAME: 172.16.238.22
+      NODENAME: "172.16.0.201"
       ERL_FLAGS: "-setcookie ${COUCHDB_COOKIE}"
     networks:
       private:
-        ipv4_address: 172.16.238.22
+        ipv6_address: 2001:3200:3200::2001
+        ipv4_address: 172.16.0.201
     volumes:
-      - "couchdb-node2-data:/opt/couchdb/data"
-      - "couchdb-node2-cfg:/opt/couchdb/etc/local.d"
+      - couchdb-node2-data:/opt/couchdb/data
+      - couchdb-node2-cfg:/opt/couchdb/etc/local.d
+
+  couchdb-node3:
+    image: couchdb:3.3.1
+    restart: always
+    container_name: couchdb-node3
+    hostname: couchdb-node3
+    environment:
+      COUCHDB_USER: ${COUCHDB_USER}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
+      COUCHDB_SECRET: ${COUCHDB_SECRET}
+      NODENAME: "172.16.0.202"
+      ERL_FLAGS: "-setcookie ${COUCHDB_COOKIE}"
+    networks:
+      private:
+        ipv6_address: 2001:3200:3200::2002
+        ipv4_address: 172.16.0.202
+    volumes:
+      - couchdb-node3-data:/opt/couchdb/data
+      - couchdb-node3-cfg:/opt/couchdb/etc/local.d
   
   couchdb-cluster-setup:
     image: gesellix/couchdb-cluster-config
+    # build: ./couchdb-cluster-config
     container_name: couchdb-cluster-setup
     command: >-
           setup
@@ -126,12 +135,13 @@ services:
           --timeout 60s
           --username ${COUCHDB_USER}
           --password ${COUCHDB_PASSWORD}
-          -nodes 172.16.238.20
-          -nodes 172.16.238.21
-          -nodes 172.16.238.22
+          -nodes "172.16.0.200"
+          -nodes "172.16.0.201"
+          -nodes "172.16.0.202"
     networks:
       private:
-        ipv4_address: 172.16.238.29
+        ipv6_address: 2001:3200:3200::2020
+        ipv4_address: 172.16.0.220
 
   couchdb-migrations:
     image: node:20.4.0-alpine
@@ -140,9 +150,9 @@ services:
     environment:
       COUCHDB_USER: ${COUCHDB_USER}
       COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
-      COUCHDB_SERVER: http://172.16.238.20:5984
+      COUCHDB_SERVER: http://couchdb-node1:5984
     depends_on:
-      - couchdb-main
+      - couchdb-node1
     volumes:
       - ./migrations:/app
     command: >-
@@ -153,7 +163,7 @@ services:
         "
     networks:
       private:
-        ipv4_address: 172.16.238.28
+        ipv6_address: 2001:3200:3200::2021
 
   ###
   # Kafka QUEUE
@@ -164,58 +174,114 @@ services:
     image: confluentinc/cp-zookeeper:7.4.1
     restart: always
     container_name: queue-zookeeper
+    hostname: queue-zookeeper
+    volumes:
+      - queue-zookeeper-log:/var/lib/zookeeper/log
+      - queue-zookeeper-secrets:/etc/zookeeper/secrets
+      - queue-zookeeper-data:/var/lib/zookeeper/data
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     networks:
       private:
-        ipv4_address: 172.16.238.30
+        ipv6_address: 2001:3200:3200::3030
 
   queue-ui:
     image: provectuslabs/kafka-ui
     restart: always
     container_name: queue-ui
+    hostname: queue-ui
+    ports: 
+      - 8081:8080
     environment:
       - KAFKA_CLUSTERS_0_NAME=queue-cluster
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=172.16.238.31:29092,172.16.238.32:29092
-      - KAFKA_CLUSTERS_0_ZOOKEEPER=172.16.238.30:2181
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=queue-node1:29092,queue-node2:29092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=queue-zookeeper:2181
     networks:
       private:
-        ipv4_address: 172.16.238.39
+        ipv6_address: 2001:3200:3200::3031
 
-  queue-kafka-node1:
+  queue-node1:
     image: confluentinc/cp-kafka:7.4.1
     restart: always
-    container_name: queue-kafka-node1
+    container_name: queue-node1
+    hostname: queue-node1
     depends_on:
       - queue-zookeeper
     networks:
       private:
-        ipv4_address: 172.16.238.31
+        ipv6_address: 2001:3200:3200::3000
+    volumes:
+      - queue-node1-data:/var/lib/kafka/data
+      - queue-node1-secrets:/etc/kafka/secrets
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: 172.16.238.30:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://172.16.238.31:29092
+      KAFKA_ZOOKEEPER_CONNECT: "queue-zookeeper:2181"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://queue-node1:29092"
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      KAFKA_OPTS: "-Djava.net.preferIPv4Stack=True"
 
-  queue-kafka-node2:
+  queue-node2:
     image: confluentinc/cp-kafka:7.4.1
     restart: always
-    container_name: queue-kafka-node2
+    container_name: queue-node2
+    hostname: queue-node2
     depends_on:
       - queue-zookeeper
     networks:
       private:
-        ipv4_address: 172.16.238.32
+        ipv6_address: 2001:3200:3200::3001
+    volumes:
+      - queue-node2-data:/var/lib/kafka/data
+      - queue-node2-secrets:/etc/kafka/secrets
     environment:
       KAFKA_BROKER_ID: 2
-      KAFKA_ZOOKEEPER_CONNECT: 172.16.238.30:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://172.16.238.32:29092
+      KAFKA_ZOOKEEPER_CONNECT: "queue-zookeeper:2181"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://queue-node2:29092"
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      KAFKA_OPTS: "-Djava.net.preferIPv4Stack=True"
+
+  ###
+  # Analytics: umami
+  ###
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    restart: always
+    container_name: umami
+    hostname: umami
+    environment:
+      DATABASE_URL: "postgresql://${UMAMI_DB_USER}:${UMAMI_DB_PASSWORD}@umami-database:5432/umami"
+      DATABASE_TYPE: postgresql
+      APP_SECRET: ${UMAMI_APP_SECRET}
+      NODE_ENV: production
+      PORT: 4000
+      HOST: 0.0.0.0
+    networks:
+      private:
+        ipv6_address: 2001:3200:3200::4000
+  
+  umami-database:
+    image: postgres:15-alpine
+    restart: always
+    container_name: umami-database
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: ${UMAMI_DB_USER}
+      POSTGRES_PASSWORD: ${UMAMI_DB_PASSWORD}
+    networks:
+      private:
+        ipv6_address: 2001:3200:3200::4001
+    volumes:
+      - umami-database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   
 networks:
   public:
@@ -223,16 +289,34 @@ networks:
   private:
     name: private-combat-otter
     internal: true
+    enable_ipv6: true
     ipam:
       driver: default
       config:
-        - subnet: 172.16.238.0/24
+        - subnet: 2001:3200:3200::/64
+          gateway: 2001:3200:3200::1
+        - subnet: 172.16.0.0/24
+          gateway: 172.16.0.1
 
 volumes:
-  couchdb-main-data:
-  couchdb-main-cfg:
+  queue-zookeeper-log:
+  queue-zookeeper-secrets:
+  queue-zookeeper-data:
+  
+  queue-node1-data:
+  queue-node1-secrets:
+
+  queue-node2-data:
+  queue-node2-secrets:
+
   couchdb-node1-data:
   couchdb-node1-cfg:
   couchdb-node2-data:
   couchdb-node2-cfg:
+  couchdb-node3-data:
+  couchdb-node3-cfg:
+
+  umami-database:
+
   frontend-dev-deps:
+    

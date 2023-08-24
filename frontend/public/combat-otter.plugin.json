@@ -1,0 +1,31 @@
+{
+    "$schema": "./plugin.schema.json",
+    "version": "1.0",
+    "baseUri": "https://udra.io",
+    "icon": "/favicon.ico",
+    "title": [
+        { "language": "en", "value": "My Profile" },
+        { "language": "ru", "value": "Мой профиль" },
+        { "language": "ua", "value": "Мій профіль" },
+        { "language": "lt", "value": "Mano profilis" }
+    ],
+    "description": [
+        { "language": "en", "value": "Share your statistics with the community" },
+        { "language": "ru", "value": "Поделись своей статистикой с сообществом" },
+        { "language": "ua", "value": "Поділися своєю статистикою з спільнотою" },
+        { "language": "lt", "value": "Pasidalinkite savo statistika su bendruomene" }
+    ],
+    "settings": {
+        "path": "/plugin/settings"
+    },
+    "notify": {
+        "path": "/api/notify",
+        "interval": 5,
+        "filter": {
+            "length": 30
+        },
+        "flags": [
+            "send-on-startup"
+        ]
+    }
+}

@@ -4,7 +4,13 @@ http:
       entryPoints: 
       - http
       service: frontend-service
-      rule: Host(`frontend.otter.lt`) || Host(`frontend.internal`)
+      rule: Host(`{{ env "BASE_DOMAIN" }}`) || Host(`www.{{ env "BASE_DOMAIN" }}`)
+
+  middlewares:
+    frontend-middleware:
+      buffering:
+        # Limite by 256KB | TODO: Update limits
+        maxRequestBodyBytes: 256000
 
   services:
     frontend-service:

@@ -4,11 +4,11 @@ http:
       entryPoints: 
       - http
       service: kafka-service
-      rule: Host(`kafka.otter.lt`) || Host(`kafka.internal`)
+      rule: Host(`kafka.{{ env "BASE_DOMAIN" }}`)
 
   services:
     kafka-service:
       loadBalancer:
         servers:
-        - url: http://172.16.238.39:8080/
+        - url: http://queue-ui:8080/
         passHostHeader: false

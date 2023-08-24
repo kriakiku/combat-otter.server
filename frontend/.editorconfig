@@ -1,4 +1,4 @@
-[*.ts,.vue,.json]
+[*.ts,*.vue,*.json]
 charset = utf-8
 indent_style = space
 indent_size = 2

@@ -1,5 +1,9 @@
 import { Type as T, Static } from '@sinclair/typebox'
 
+enum ProfileBadge {
+    premium = 'premium'
+}
+
 enum ProfileVersion {
     v1 = 'v1'
 }

@@ -1,63 +1,15 @@
-# Nuxt 3 Minimal Starter
+# Combat Otter Frontend
 
-Look at the [Nuxt 3 documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+## TODO Plugin settings
 
-## Setup
-
-Make sure to install the dependencies:
-
-```bash
-# npm
-npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-```
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
-```bash
-# npm
-npm run dev
-
-# pnpm
-pnpm run dev
-
-# yarn
-yarn dev
-```
-
-## Production
-
-Build the application for production:
-
-```bash
-# npm
-npm run build
-
-# pnpm
-pnpm run build
-
-# yarn
-yarn build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm run preview
-
-# yarn
-yarn preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+- Ссылка на страницу
+- Возможность изменить адрес ссылки
+- Выбор темы оформления (можно позже)
+- Возможность отображать только часть игры (WZ/MW)
+- Привязка соц. сетей
+- Редактирование описания профиля
+- Редактирование имени пользователя
+- Авторизация для сохранения аккаунта (можно позже)
+- Обезличивание данных внесения статистики (можно позже)
+- Premium badge
+- Premium banner

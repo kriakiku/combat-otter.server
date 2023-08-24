@@ -4,13 +4,13 @@ http:
       entryPoints: 
       - http
       service: couchdb-service
-      rule: Host(`couchdb.otter.lt`) || Host(`couchdb.internal`)
+      rule: Host(`couchdb.{{ env "BASE_DOMAIN" }}`)
 
   services:
     couchdb-service:
       loadBalancer:
         servers:
-        - url: http://172.16.238.20:5984/
-        - url: http://172.16.238.21:5984/
-        - url: http://172.16.238.22:5984/
+        - url: http://couchdb-node1:5984/
+        - url: http://couchdb-node2:5984/
+        - url: http://couchdb-node3:5984/
         passHostHeader: false

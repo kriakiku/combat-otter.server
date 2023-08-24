@@ -1,0 +1,14 @@
+http:
+  routers:
+    umami:
+      entryPoints: 
+      - http
+      service: umami-service
+      rule: Host(`umami.{{ env "BASE_DOMAIN" }}`)
+
+  services:
+    umami-service:
+      loadBalancer:
+        servers:
+        - url: http://umami:4000/
+        passHostHeader: true

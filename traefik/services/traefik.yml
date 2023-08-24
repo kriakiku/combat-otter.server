@@ -5,7 +5,7 @@ http:
       - http
       service: api@internal
       middlewares: traefik-auth
-      rule: Host(`traefik.otter.lt`) || Host(`traefik.internal`)
+      rule: Host(`traefik.{{ env "BASE_DOMAIN" }}`)
 
   middlewares:
     traefik-auth:
@@ -17,5 +17,5 @@ http:
     traefik-service:
       loadBalancer:
         servers:
-        - url: http://172.16.238.39:8080/
+        - url: http://traefik:8080/
         passHostHeader: false
